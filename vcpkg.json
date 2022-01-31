@@ -1,0 +1,12 @@
+{
+    "name": "vulkanexample",
+    "version-string": "0.0.1",
+    "dependencies": [
+      "glfw3",
+      "glew",
+      "stb",
+      "glm",
+      "vulkan",
+      "tinyobjloader"
+    ]
+}
