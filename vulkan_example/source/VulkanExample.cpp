@@ -1137,10 +1137,18 @@ void VulkanApp::createDescriptorSetLayouts() {
         fxDescriptorSet0LayoutBinding0.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         fxDescriptorSet0LayoutBinding0.pImmutableSamplers = nullptr;
 
-        VkDescriptorSetLayoutBinding fxSet0LayoutBindings[] = { fxDescriptorSet0LayoutBinding0};
+        // (set = 0, binding 1)
+        VkDescriptorSetLayoutBinding fxDescriptorSet0LayoutBinding1{};
+        fxDescriptorSet0LayoutBinding1.binding = 1;
+        fxDescriptorSet0LayoutBinding1.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        fxDescriptorSet0LayoutBinding1.descriptorCount = 1;
+        fxDescriptorSet0LayoutBinding1.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        fxDescriptorSet0LayoutBinding1.pImmutableSamplers = nullptr;
+
+        VkDescriptorSetLayoutBinding fxSet0LayoutBindings[] = { fxDescriptorSet0LayoutBinding0, fxDescriptorSet0LayoutBinding1 };
         VkDescriptorSetLayoutCreateInfo fxSet0Layout{};
         fxSet0Layout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        fxSet0Layout.bindingCount = 1;
+        fxSet0Layout.bindingCount = 2;
         fxSet0Layout.pBindings = fxSet0LayoutBindings;
 
         VkResult fxDescriptorSet0LayoutCreated = vkCreateDescriptorSetLayout(device, &fxSet0Layout, nullptr, &descriptorSetLayouts.fx0);
@@ -1203,13 +1211,13 @@ void VulkanApp::createDescriptorPool() {
         poolsize3.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
         poolSizes.push_back(poolsize3);
 
-        /*
+        
         // textureImage
         VkDescriptorPoolSize poolsize4;
         poolsize4.descriptorCount = static_cast<uint32_t>(swapChainImages.size());
         poolsize4.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         poolSizes.push_back(poolsize4);
-        */
+        
         // ---------------
 
         VkDescriptorPoolCreateInfo poolInfo{};
@@ -1312,12 +1320,12 @@ void VulkanApp::createDescriptorSets() {
             depthDescriptor.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
             depthDescriptor.sampler = VK_NULL_HANDLE;
 
-            /*
+            
             VkDescriptorImageInfo textureDescriptor{};
             depthDescriptor.imageView = textureImageView;
-            depthDescriptor.imageLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+            depthDescriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             depthDescriptor.sampler = textureSampler;
-            */
+            
 
             // ----------------
             // Scene Descriptor Set
@@ -1352,7 +1360,7 @@ void VulkanApp::createDescriptorSets() {
             // ---------------
             // FX Descriptor Set 0
             // layout(set = 0, binding = 0) uniform uboFX
-            std::array<VkWriteDescriptorSet, 1> fxDescriptorSet0Write{};
+            std::array<VkWriteDescriptorSet, 2> fxDescriptorSet0Write{};
             fxDescriptorSet0Write[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             fxDescriptorSet0Write[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             fxDescriptorSet0Write[0].dstSet = descriptorSets.fx0[i];
@@ -1360,8 +1368,7 @@ void VulkanApp::createDescriptorSets() {
             fxDescriptorSet0Write[0].descriptorCount = 1;
             fxDescriptorSet0Write[0].dstArrayElement = 0;
             fxDescriptorSet0Write[0].pBufferInfo = &fxDescriptor;
-            
-            /*
+                     
             fxDescriptorSet0Write[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             fxDescriptorSet0Write[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
             fxDescriptorSet0Write[1].dstSet = descriptorSets.fx0[i];
@@ -1369,7 +1376,7 @@ void VulkanApp::createDescriptorSets() {
             fxDescriptorSet0Write[1].descriptorCount = 1;
             fxDescriptorSet0Write[1].dstArrayElement = 0;
             fxDescriptorSet0Write[1].pImageInfo = &textureDescriptor;
-            */
+            
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(fxDescriptorSet0Write.size()), fxDescriptorSet0Write.data(), 0, nullptr);
 
 
@@ -2964,7 +2971,7 @@ VkCommandBuffer VulkanApp::createSingleUseCommandBuffer() {
         if (commandBuffersAllocated != VK_SUCCESS) {
             throw std::runtime_error("failed to allocate transfer command buffers from command pool");
         }
-        std::cout << "(single-use) transfer command buffers allocated from transfer command pool" << '\n';
+        std::cout << "(single-use) transfer command buffers allocated from graphics command pool" << '\n';
 
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
