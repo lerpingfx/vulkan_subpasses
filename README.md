@@ -13,9 +13,6 @@ Input depth attachment is used to reconstrut the scene's world position, in orde
 
 ![Screenshot](./subpasses.png)
 
-Subpasses and "subpassLoad" optimize for tile-based architecture, by accessing tiles of the attachments stored in fast-access GPU memory.
-https://arm-software.github.io/vulkan_best_practice_for_mobile_developers/samples/performance/render_subpasses/render_subpasses_tutorial.html
-
 
 To configure and build the project:
 -------------------------------
