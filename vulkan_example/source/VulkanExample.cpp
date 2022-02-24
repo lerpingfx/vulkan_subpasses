@@ -1456,7 +1456,7 @@ void VulkanApp::createGraphicsBuffer(VkDeviceSize bufferSize, VkBufferUsageFlags
         uint32_t memoryTypeIndex = findMemoryTypeIndex(bufferSupportedMemTypes_Bitflags, memProperties_Bitflags); //get index of memory type, based of required properties and buffer's memory type
         allocInfo.memoryTypeIndex = memoryTypeIndex;
 
-        allocInfo.allocationSize = bufferMemRequirements.size; // GPU memory size to allocate in bytes. can differ from buffers size
+        allocInfo.allocationSize = bufferMemRequirements.size; // GPU memory size to allocate for the buffer. (maximum size for the buffer)
 
         VkResult memoryAllocated = vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory);
         if (memoryAllocated != VK_SUCCESS) {
