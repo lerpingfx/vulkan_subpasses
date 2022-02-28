@@ -3346,7 +3346,7 @@ void VulkanApp::updateUniformBuffers(uint32_t currentImage) {
         // flip y coordinates
         uboScene.proj[1][1] *= -1;
 
-        // map gpu memory at address "data" (to store "ubo")
+        // return host-accessible pointer to range of GPU memory, at given offset, for UBO's resoure address (for current swapchain image)
         void* data0;
         vkMapMemory(device, uniformBuffersSceneMemory[currentImage], 0, sizeof(uboScene), 0, &data0);
         // copy "ubo" data to gpu memory (at "data" address)
