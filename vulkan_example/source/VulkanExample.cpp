@@ -1314,9 +1314,9 @@ void VulkanApp::createDescriptorSets() {
 
             /*
             VkDescriptorImageInfo textureDescriptor{};
-            depthDescriptor.imageView = textureImageView;
-            depthDescriptor.imageLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
-            depthDescriptor.sampler = textureSampler;
+            textureDescriptor.imageView = textureImageView;
+            textureDescriptor.imageLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+            textureDescriptor.sampler = textureSampler;
             */
 
             // ----------------
