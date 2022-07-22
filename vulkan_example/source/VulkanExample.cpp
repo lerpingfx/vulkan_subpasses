@@ -2858,7 +2858,7 @@ void VulkanApp::createSyncObjects() {
         VkSemaphoreCreateInfo semaphoreCreateInfo{}; // GPU-GPU syncrhonization (block GPU execution, using GPU signals)
         semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-        cbuffersExecutionFence.resize(MAX_FRAMES_IN_FLIGHT);
+        cmdbuffersExecutionFence.resize(MAX_FRAMES_IN_FLIGHT);
         uint32_t swapchainImageCount = (uint32_t)swapChainFramebuffers.size();
         swapchainImageFence.resize(swapchainImageCount, VK_NULL_HANDLE);
 
@@ -2883,10 +2883,10 @@ void VulkanApp::createSyncObjects() {
                 throw std::runtime_error("failed creating transferFinished sempahore");
             }
 
-            VkResult cbuffersExecutionFenceCreated = vkCreateFence(device, &fenceCreateInfo, nullptr, &cbuffersExecutionFence[i]);
+            VkResult cmdbuffersExecutionFenceCreated = vkCreateFence(device, &fenceCreateInfo, nullptr, &cmdbuffersExecutionFence[i]);
 
-            if (cbuffersExecutionFenceCreated != VK_SUCCESS) {
-                throw std::runtime_error("failed creating cbuffersExecution fence");
+            if (cmdbuffersExecutionFenceCreated != VK_SUCCESS) {
+                throw std::runtime_error("failed creating cmdbuffersExecution fence");
             }
         }
 
@@ -3389,23 +3389,24 @@ void VulkanApp::drawFrame() {
         std::cout << "drawing frame..... " << '\n';
         std::cout << "target frame " << std::to_string(frameID) << '\n';
 
-        // block further cbuffer submissions, until previously submitted cbuffers finished execution (for frameID)
+        // block until the frame's cmd buffer exectuion fence signals
             // note: fences created in already "signaled" state, to avoid initial block
-        vkWaitForFences(device, 1, &cbuffersExecutionFence[frameID], VK_TRUE, UINT64_MAX);
+        vkWaitForFences(device, 1, &cmdbuffersExecutionFence[frameID], VK_TRUE, UINT64_MAX);
 
         uint32_t swapImageID;
-        // fetch available image from swapchain, then signal image's semaphore
+        // fetch next available swapchain image ID, and signal imageAvailableSemaphore[frameID]
         // --------------------------------------------------------------------
         vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphore[frameID], VK_NULL_HANDLE, &swapImageID);
         std::cout << "target swapchain image " << std::to_string(swapImageID) << '\n';
 
-        // block further cbuffer submissions, until previously submitted cbuffers finished execution (which render to swapchain image ID)
+        // block until swapchainiImageFence[swapImageID] signals ( when previously subtmitted cmd buffer finished rendering to this swapchain image )
             // note: swapchain-image fences initialize as null handle, to avoid initial block
         if (swapchainImageFence[swapImageID] != VK_NULL_HANDLE) {
             vkWaitForFences(device, 1, &swapchainImageFence[swapImageID], VK_TRUE, UINT64_MAX);
         }
-
-        swapchainImageFence[swapImageID] = cbuffersExecutionFence[frameID];
+	
+	// swapchainImageFence[swapImageID] will signal when this frame's command buffer finishes executing
+        swapchainImageFence[swapImageID] = cmdbuffersExecutionFence[frameID]; 
 
         updateUniformBuffers(swapImageID);
 
@@ -3432,23 +3433,23 @@ void VulkanApp::drawFrame() {
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &graphicsCommandBuffer[swapImageID];
 
-        // specify semaphore(s) to signal when cbuffer finishes execution
+        // specify semaphore(s) to signal when cmd buffer finishes execution (in order to safely present)
         VkSemaphore signalSemaphores[] = { renderingFinishedSemaphore[frameID] };
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
         // unsignal frame's fence
-        vkResetFences(device, 1, &cbuffersExecutionFence[frameID]);
+        vkResetFences(device, 1, &cmdbuffersExecutionFence[frameID]);
         // frame1signal = false
 
         // submit command buffers to graphics queue
-        // when execution finishes, signal the frame's fence. (cbuffersExecutionFence[currentFrame])
-        VkResult commandBufferSubmitted_GraphicsQueue = vkQueueSubmit(graphicsQueue, 1, &submitInfo, cbuffersExecutionFence[frameID]);         // (queue, command buffers count, submit info, optional fence to signal)
+        	// when execution finishes, signal 'renderingFinishedSemaphore' and 'cmdbuffersExecutionFence[currentFrame]'
+        VkResult commandBufferSubmitted_GraphicsQueue = vkQueueSubmit(graphicsQueue, 1, &submitInfo, cmdbuffersExecutionFence[frameID]);         // (queue, command buffers count, submit info, optional fence to signal)
         if (commandBufferSubmitted_GraphicsQueue != VK_SUCCESS) {
             throw std::runtime_error("failed to submit command buffer to graphics queue");
         }
         std::cout << "submitted command buffer to graphics queue" << '\n';
-        std::cout << "fence: cbufferExecFence " << std::to_string(frameID) << " will signal when execution is done" << '\n';
+        std::cout << "fence: cmdbufferExecFence " << std::to_string(frameID) << " will signal when execution is done" << '\n';
 
 
         // Present swapchain image 
@@ -3456,7 +3457,7 @@ void VulkanApp::drawFrame() {
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.waitSemaphoreCount = 1;
-        // wait for frame's cbuffer execution to finish, before presenting swapchain image
+        // wait for 'renderingFinishedSemaphore' to signal, before safely presenting swapchain image
         presentInfo.pWaitSemaphores = signalSemaphores;
 
         VkSwapchainKHR swapChains[] = { swapChain };
@@ -3494,7 +3495,7 @@ void VulkanApp::cleanup() {
             vkDestroySemaphore(device, imageAvailableSemaphore[i], nullptr);
             vkDestroySemaphore(device, renderingFinishedSemaphore[i], nullptr);
             vkDestroySemaphore(device, transferFinishedSemaphore[i], nullptr);
-            vkDestroyFence(device, cbuffersExecutionFence[i], nullptr);
+            vkDestroyFence(device, cmdbuffersExecutionFence[i], nullptr);
         }
 
         vkDestroyCommandPool(device, graphicsCommandPool, nullptr);
