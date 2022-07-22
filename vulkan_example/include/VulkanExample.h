@@ -180,7 +180,7 @@ private:
     std::vector<VkSemaphore> imageAvailableSemaphore;
     std::vector<VkSemaphore> renderingFinishedSemaphore;
     std::vector<VkSemaphore> transferFinishedSemaphore;
-    std::vector<VkFence> cbuffersExecutionFence;
+    std::vector<VkFence> cmdbuffersExecutionFence;
     std::vector<VkFence> swapchainImageFence;
     size_t frameID;
 
